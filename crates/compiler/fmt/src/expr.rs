@@ -615,6 +615,17 @@ fn starts_with_newline(expr: &Expr) -> bool {
     }
 }
 
+fn fmt_str_body(body: &str, buf: &mut Buf) {
+    for c in body.chars() {
+        match c {
+            '\u{200b}' => buf.push_str("\\u(200b)"),
+            ' ' => buf.spaces(1),
+            '\n' => buf.newline(),
+            _ => buf.push(c)
+        }
+    }
+}
+
 fn format_str_segment(seg: &StrSegment, buf: &mut Buf, indent: u16) {
     use StrSegment::*;
 
@@ -624,10 +635,10 @@ fn format_str_segment(seg: &StrSegment, buf: &mut Buf, indent: u16) {
             // a line break in the input string
             match string.strip_suffix('\n') {
                 Some(string_without_newline) => {
-                    buf.push_str_allow_spaces(string_without_newline);
+                    fmt_str_body(string_without_newline, buf);
                     buf.newline();
                 }
-                None => buf.push_str_allow_spaces(string),
+                None => fmt_str_body(string, buf),
             }
         }
         Unicode(loc_str) => {
@@ -687,7 +698,7 @@ pub fn fmt_str_literal(buf: &mut Buf, literal: StrLiteral, indent: u16) {
                 buf.push_newline_literal();
                 for line in string.split('\n') {
                     buf.indent(indent);
-                    buf.push_str_allow_spaces(line);
+                    fmt_str_body(line, buf);
                     buf.push_newline_literal();
                 }
                 buf.indent(indent);
@@ -695,7 +706,7 @@ pub fn fmt_str_literal(buf: &mut Buf, literal: StrLiteral, indent: u16) {
             } else {
                 buf.indent(indent);
                 buf.push('"');
-                buf.push_str_allow_spaces(string);
+                fmt_str_body(string, buf);
                 buf.push('"');
             };
         }
